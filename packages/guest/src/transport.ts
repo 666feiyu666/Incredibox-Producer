@@ -65,6 +65,7 @@ export class Transport {
   private barStartAudioTime = 0;
   private armStartedAt = 0;
   private advancedBoundary = Number.NEGATIVE_INFINITY;
+  private lastLoopStart: number | null = null;
   private freeAnchor = 0;
 
   /** 观测到的相位模型（时钟消失时用它外推） */
@@ -150,6 +151,7 @@ export class Transport {
     this.armStartedAt = this.adapter.getAudioTime();
     this.freeAnchor = this.armStartedAt;
     this.advancedBoundary = Number.NEGATIVE_INFINITY;
+    this.lastLoopStart = null;
     // 刻意不重置 knownDuration / hasKnownPhase：清空舞台会让游戏静音、循环 source 消失，
     // 此时必须靠上一次观测到的相位继续外推小节网格，否则「自动出带」会在静音期卡住。
     this.syncPhase(this.armStartedAt);
@@ -282,6 +284,13 @@ export class Transport {
     this.schedule(t, duration);
 
     const loopStart = this.loopStartAt(t, duration);
+    // 音乐重新起播/主循环 source 变化时锚点会跳变（实测跨了 15s 被误判成"掉帧跳过小节"）。
+    // 锚点明显跳变时直接重新对齐，而不是推进小节号。
+    if (this.lastLoopStart !== null && Math.abs(loopStart - this.lastLoopStart) > duration * 3) {
+      this.cb.log('warn', `循环锚点跳变 ${((loopStart - this.lastLoopStart) * 1000).toFixed(0)}ms，重新对齐`);
+      this.advancedBoundary = loopStart;
+    }
+    this.lastLoopStart = loopStart;
     const nextBoundary = loopStart + duration;
     const lookahead = this.getOptions().lookaheadMs / 1000;
     if (nextBoundary > this.advancedBoundary + 1e-6 && nextBoundary - t <= lookahead) {

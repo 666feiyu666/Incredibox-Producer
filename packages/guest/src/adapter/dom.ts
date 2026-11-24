@@ -136,11 +136,26 @@ export class DomAdapter extends BaseAdapter {
     return this.orderByLayout(best.items).slice(0, want);
   }
 
-  private dispatchPointer(el: Element, type: string, point: { x: number; y: number }): void {
-    const common = { bubbles: true, cancelable: true, clientX: point.x, clientY: point.y, button: 0 };
+  /**
+   * 派发指针/鼠标事件。
+   * `buttons` 必须正确：真机 Incredibox 靠 `e.buttons` 判断"鼠标是否仍按住"来决定是否算拖拽，
+   * 少了它（或 pointerType 缺失）事件会被当成普通点击，装备/拖动静默失效。
+   */
+  private dispatchPointer(el: Element, type: string, point: { x: number; y: number }, buttons = 1): void {
+    const common = {
+      bubbles: true,
+      cancelable: true,
+      clientX: point.x,
+      clientY: point.y,
+      button: 0,
+      buttons,
+      view: window,
+    };
     if (type.startsWith('pointer')) {
       const Ctor = typeof PointerEvent === 'function' ? PointerEvent : MouseEvent;
-      el.dispatchEvent(new Ctor(type, { ...common, pointerId: 1, isPrimary: true } as PointerEventInit));
+      el.dispatchEvent(
+        new Ctor(type, { ...common, pointerId: 1, isPrimary: true, pointerType: 'mouse' } as PointerEventInit),
+      );
     } else {
       el.dispatchEvent(new MouseEvent(type, common));
     }
@@ -173,9 +188,19 @@ export class DomAdapter extends BaseAdapter {
     const to = rectCenter(slot);
     const dataTransfer = typeof DataTransfer === 'function' ? new DataTransfer() : null;
 
+    // 优先请求 Bridge 用真实 CDP 输入执行（合成事件在真机上不被游戏接受）
+    if (this.emitInput([{ kind: 'drag', from, to }])) {
+      const stage = this.stageOf(slotIndex);
+      if (stage) {
+        stage.iconId = iconId;
+        stage.muted = false;
+      }
+      return;
+    }
+
     try {
-      this.dispatchPointer(icon, 'pointerdown', from);
-      this.dispatchPointer(icon, 'mousedown', from);
+      this.dispatchPointer(icon, 'pointerdown', from, 1);
+      this.dispatchPointer(icon, 'mousedown', from, 1);
       if (dataTransfer) {
         this.dispatchDrag(icon, 'dragstart', from, dataTransfer);
         let hovered: Element | null = icon;
@@ -184,8 +209,8 @@ export class DomAdapter extends BaseAdapter {
             x: from.x + ((to.x - from.x) * step) / 6,
             y: from.y + ((to.y - from.y) * step) / 6,
           };
-          this.dispatchPointer(icon, 'pointermove', point);
-          this.dispatchPointer(document.elementFromPoint(point.x, point.y) ?? icon, 'mousemove', point);
+          this.dispatchPointer(icon, 'pointermove', point, 1);
+          this.dispatchPointer(document.elementFromPoint(point.x, point.y) ?? icon, 'mousemove', point, 1);
           const target = document.elementFromPoint(point.x, point.y) ?? slot;
           if (target !== hovered) {
             this.dispatchDrag(target, 'dragenter', point, dataTransfer);
@@ -196,10 +221,10 @@ export class DomAdapter extends BaseAdapter {
         this.dispatchDrag(slot, 'drop', to, dataTransfer);
         this.dispatchDrag(icon, 'dragend', to, dataTransfer);
       }
-      this.dispatchPointer(slot, 'pointermove', to);
-      this.dispatchPointer(slot, 'pointerup', to);
-      this.dispatchPointer(slot, 'mouseup', to);
-      this.dispatchPointer(slot, 'click', to);
+      this.dispatchPointer(slot, 'pointermove', to, 1);
+      this.dispatchPointer(slot, 'pointerup', to, 0);
+      this.dispatchPointer(slot, 'mouseup', to, 0);
+      this.dispatchPointer(slot, 'click', to, 0);
 
       const stage = this.stageOf(slotIndex);
       if (stage) {
@@ -249,9 +274,10 @@ export class DomAdapter extends BaseAdapter {
 
   private clickElement(el: Element): void {
     const point = rectCenter(el);
-    this.dispatchPointer(el, 'pointerdown', point);
-    this.dispatchPointer(el, 'pointerup', point);
-    this.dispatchPointer(el, 'click', point);
+    if (this.emitInput([{ kind: 'click', point }])) return;
+    this.dispatchPointer(el, 'pointerdown', point, 1);
+    this.dispatchPointer(el, 'pointerup', point, 0);
+    this.dispatchPointer(el, 'click', point, 0);
   }
 
   setSolo(slotIndex: number, solo: boolean): void {

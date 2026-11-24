@@ -72,6 +72,22 @@ export interface VersionSwitchState {
 
 export type MixPhase = 'start' | 'armed' | 'recording' | 'done' | 'error';
 
+/**
+ * 输入执行请求。
+ *
+ * 真机实证：Incredibox 不响应 JS 合成事件（`dispatchEvent` 会到达监听器，但游戏内部不认），
+ * 只有 CDP 注入的真实鼠标事件有效。所以 Guest 只负责「算坐标 + 决定时机」，
+ * 真正的手势交给 Bridge 用 `Input.dispatchMouseEvent` 执行。
+ */
+export interface InputOp {
+  kind: 'click' | 'drag';
+  /** click 用 */
+  point?: { x: number; y: number };
+  /** drag 用 */
+  from?: { x: number; y: number };
+  to?: { x: number; y: number };
+}
+
 /** Guest → Bridge（经 CDP binding 回传） */
 export type GuestMessage =
   | { type: 'hello'; info: GuestInfo }
@@ -80,7 +96,9 @@ export type GuestMessage =
   | { type: 'cue'; cue: FiredCue }
   | { type: 'mix'; phase: MixPhase; message?: string }
   | { type: 'probe'; report: ProbeReport }
-  | { type: 'log'; level: LogEntry['level']; message: string };
+  | { type: 'log'; level: LogEntry['level']; message: string }
+  /** 请求 Bridge 用真实 CDP 输入执行手势 */
+  | { type: 'input:exec'; ops: InputOp[] };
 
 /** Bridge → Guest：HostCommand 去掉仅 Bridge 关心的 hello / ping */
 export type GuestCommand = Exclude<HostCommand, { type: 'hello' } | { type: 'ping' }>;

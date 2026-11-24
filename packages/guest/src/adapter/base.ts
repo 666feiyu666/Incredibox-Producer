@@ -1,5 +1,6 @@
 import {
   emptySnapshot,
+  type InputOp,
   type AdapterKind,
   type ClockSource,
   type GameAdapter,
@@ -28,6 +29,24 @@ export abstract class BaseAdapter implements GameAdapter, GameAdapterExtras {
   protected notes: string[] = [];
   protected lastError: string | null = null;
   protected config: AdapterConfig;
+  /** 由 Agent 注入：把手势交给 Bridge 用真实 CDP 输入执行 */
+  private inputSink: ((ops: InputOp[]) => void) | null = null;
+
+  setInputSink(sink: ((ops: InputOp[]) => void) | null): void {
+    this.inputSink = sink;
+  }
+
+  /** 有 Bridge 通道就走真实输入；没有（纯控制台注入）退回合成事件 */
+  protected emitInput(ops: InputOp[]): boolean {
+    if (!this.inputSink) return false;
+    try {
+      this.inputSink(ops);
+      return true;
+    } catch (err) {
+      this.markError(err, 'emitInput');
+      return false;
+    }
+  }
 
   constructor(config: AdapterConfig) {
     this.config = config;

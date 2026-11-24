@@ -37,6 +37,11 @@ const cdp = new CdpManager(
         hub.log('warn', 'bridge', 'Guest 传来无法解析的消息');
         return;
       }
+      // 手势执行请求：Guest 算好坐标，Bridge 用真实 CDP 输入执行（真机只认这个）
+      if (msg.type === 'input:exec') {
+        void cdp.executeInputs(msg.ops);
+        return;
+      }
       const wasOnline = hub.snapshot.guest !== null;
       hub.handleGuestMessage(msg);
       if (msg.type === 'hello' && !wasOnline) {

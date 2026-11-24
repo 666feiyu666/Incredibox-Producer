@@ -199,10 +199,12 @@ export class AudioClock {
     return reg.sources.filter((s) => {
       if (s.duration <= 0.05 || s.duration > 120) return false;
       if (s.ctx.state === 'closed') return false;
-      const age = s.ctx.currentTime - s.startTime;
-      if (age < -0.5) return false;
-      // 非循环 source 播完即结束：超过两个循环长度就认为过期（游戏下一循环会重新 start）
-      if (!s.loop && age > s.duration * 2 + 0.5) return false;
+      if (s.ctx.currentTime - s.startTime < -0.5) return false;
+      // 刻意不做过期淘汰：真机实测有两种播放方式 ——
+      //   V9：每个循环重新 start 一批 source（间隔 == duration）
+      //   V5 Brazil：整个会话只 start 一个长 buffer，之后再没有新 source
+      // 一旦按 age 淘汰，第二种情况会直接丢掉整个时钟（loopDuration 变 0、退化成 BPM 推算）。
+      // 旧 source 由上面的 400 条上限控制，相位锚点永远取最新的那一条，所以保留是安全的。
       return true;
     });
   }

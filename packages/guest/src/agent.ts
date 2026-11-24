@@ -47,6 +47,8 @@ export class Agent {
       domProfile: this.options.domProfile,
     });
     this.link = new Link((msg) => this.handle(msg), config.wsUrl);
+    // 手势执行下沉到 Bridge：真机只认真实 CDP 输入，Guest 只负责算坐标和时机
+    this.adapter.setInputSink((ops) => this.send({ type: 'input:exec', ops }));
     this.transport = new Transport(this.adapter, () => this.options, this.buildCallbacks());
     this.mixer = this.buildMixer();
 
@@ -273,6 +275,7 @@ export class Agent {
       loopOverrideSec: this.options.loopOverrideSec,
       domProfile: this.options.domProfile,
     });
+    this.adapter.setInputSink((ops) => this.send({ type: 'input:exec', ops }));
     this.transport = new Transport(this.adapter, () => this.options, this.buildCallbacks());
     this.mixer = this.buildMixer();
     if (wasPlaying && this.project) this.transport.start(this.project, bar, 'play');
