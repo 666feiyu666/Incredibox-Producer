@@ -1,4 +1,4 @@
-import type { AdapterKind, ProbeReport } from '@ic/shared';
+import type { AdapterKind, InputOp, ProbeReport } from '@ic/shared';
 import { BaseAdapter } from './base.ts';
 import { cssPath, describe, isVisible, rectCenter } from '../util.ts';
 
@@ -185,11 +185,29 @@ export class DomAdapter extends BaseAdapter {
     // 真机的拖拽热区是 .picto 内部的 .hitzone，从那里起手才被游戏接受
     const handle = (icon.querySelector('.hitzone') as HTMLElement | null) ?? icon;
     const from = rectCenter(handle);
-    const to = rectCenter(slot);
+    // 落点取角色上半部：角色中下部被 mute/solo/delete 那层 .ctrl 覆盖，
+    // 拖到中心时 drop 会被控制层吃掉（实测换装因此失败）。
+    const slotRect = slot.getBoundingClientRect();
+    const to = { x: slotRect.left + slotRect.width / 2, y: slotRect.top + slotRect.height * 0.3 };
     const dataTransfer = typeof DataTransfer === 'function' ? new DataTransfer() : null;
 
+    // 复制一份舞台影子状态用于判断是否需要先撤下
+    const current = this.stageOf(slotIndex);
+    const needsClear = current !== null && current.iconId !== null && current.iconId !== iconId;
+    const removeBtn = slot.querySelector(CTRL_SELECTORS.delete) as HTMLElement | null;
+
+    // 真机实证：把新音色直接拖到「已有音色」的角色上会被忽略，
+    // 必须先点角色上的 × 撤下，等撤场动画结束再拖新的上来。
+    const ops: InputOp[] = [];
+    if (needsClear && removeBtn) {
+      ops.push({ kind: 'click', point: rectCenter(removeBtn) });
+      ops.push({ kind: 'drag', from, to, delayMs: 420 });
+    } else {
+      ops.push({ kind: 'drag', from, to });
+    }
+
     // 优先请求 Bridge 用真实 CDP 输入执行（合成事件在真机上不被游戏接受）
-    if (this.emitInput([{ kind: 'drag', from, to }])) {
+    if (this.emitInput(ops)) {
       const stage = this.stageOf(slotIndex);
       if (stage) {
         stage.iconId = iconId;

@@ -360,18 +360,29 @@ ${source}
    * 执行 Guest 请求的手势（真实 CDP 输入）。
    * Guest 的调度器已经算好坐标和时机，这里只负责"真的把鼠标动起来"。
    */
-  async executeInputs(ops: Array<{ kind: 'click' | 'drag'; point?: { x: number; y: number }; from?: { x: number; y: number }; to?: { x: number; y: number } }>): Promise<void> {
+  async executeInputs(
+    ops: Array<{
+      kind: 'click' | 'drag';
+      point?: { x: number; y: number };
+      from?: { x: number; y: number };
+      to?: { x: number; y: number };
+      delayMs?: number;
+    }>,
+  ): Promise<void> {
     // 严格串行 + 手势之间留间隔：一次 preheat 可能连发 5~7 个拖拽，
     // 真机在上一手势还没回位时收到下一个 pointerdown 会直接丢弃。
     this.inputChain = this.inputChain.then(async () => {
       if (!this.client) return;
       for (const op of ops) {
+        if (op.delayMs && op.delayMs > 0) {
+          await new Promise((resolve) => setTimeout(resolve, op.delayMs));
+        }
         if (op.kind === 'click' && op.point) {
           await this.click(op.point.x, op.point.y);
         } else if (op.kind === 'drag' && op.from && op.to) {
-          await this.drag(op.from, op.to, 8);
+          await this.drag(op.from, op.to, 5);
         }
-        await new Promise((resolve) => setTimeout(resolve, 25));
+        await new Promise((resolve) => setTimeout(resolve, 12));
       }
     });
     return this.inputChain;

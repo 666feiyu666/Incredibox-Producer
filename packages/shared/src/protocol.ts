@@ -86,6 +86,8 @@ export interface InputOp {
   /** drag 用 */
   from?: { x: number; y: number };
   to?: { x: number; y: number };
+  /** 执行这个手势前额外等待（毫秒），用于等上一个动作的界面动画结束 */
+  delayMs?: number;
 }
 
 /** Guest → Bridge（经 CDP binding 回传） */
