@@ -1,0 +1,13 @@
+export * from './types.ts';
+export * from './protocol.ts';
+export * from './icons.ts';
+export * from './state.ts';
+export * from './schedule.ts';
+export * from './edits.ts';
+export * from './serialize.ts';
+export const AGENT_GLOBAL = '__INCREDIBOX_AGENT__';
+export const EMIT_BINDING = '__INCREDIBOX_AGENT_EMIT__';
+export const SIM_GLOBAL = '__INCREDIBOX_SIM__';
+export const SERVER_VERSION = '1.0.0';
+export const DEFAULT_WS_PORT = 9451;
+export const DEFAULT_CDP_PORT = 9222;

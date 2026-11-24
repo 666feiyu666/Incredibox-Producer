@@ -1,0 +1,16 @@
+{
+  "name": "@ic/guest",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "vite build",
+    "watch": "vite build --watch"
+  },
+  "dependencies": {
+    "@ic/shared": "*"
+  },
+  "devDependencies": {
+    "vite": "^8.3.8"
+  }
+}

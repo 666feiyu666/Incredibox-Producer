@@ -1,0 +1,30 @@
+{
+  "name": "incredibox-composer",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Incredibox (Steam) 自动化作曲工作台：Host UI + CDP Bridge + 注入式 Guest 运行时",
+  "type": "module",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "typecheck": "tsc -p packages/shared --noEmit && tsc -p packages/guest --noEmit && tsc -p packages/bridge --noEmit && tsc -p packages/host --noEmit",
+    "build:guest": "npm run build -w @ic/guest",
+    "build:host": "npm run build -w @ic/host",
+    "build": "npm run build:guest && npm run build:host",
+    "bridge": "node packages/bridge/src/server.ts",
+    "sim": "npm run build:guest && node packages/bridge/src/server.ts --launch-sim",
+    "dev": "node scripts/dev.mjs",
+    "test": "vitest run",
+    "test:e2e": "node scripts/e2e.mjs",
+    "verify": "npm run typecheck && npm run test && npm run build && npm run test:e2e"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.0",
+    "typescript": "^5.9.3",
+    "vitest": "^5.1.1"
+  },
+  "engines": {
+    "node": ">=22.18"
+  }
+}

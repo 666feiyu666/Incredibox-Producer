@@ -1,0 +1,64 @@
+@import 'tailwindcss';
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: #070b14;
+  color: #e2e8f0;
+  font-family: ui-sans-serif, system-ui, 'Segoe UI', 'Microsoft YaHei', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: rgba(34, 211, 238, 0.3);
+}
+
+/* 细滚动条，避免打断网格视觉 */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #24314d transparent;
+}
+*::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+*::-webkit-scrollbar-thumb {
+  background: #24314d;
+  border-radius: 999px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.grid-scroll {
+  scrollbar-gutter: stable;
+}
+
+@keyframes pulse-ring {
+  0% { box-shadow: 0 0 0 0 rgba(244, 63, 94, 0.45); }
+  70% { box-shadow: 0 0 0 10px rgba(244, 63, 94, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(244, 63, 94, 0); }
+}
+
+.rec-live {
+  animation: pulse-ring 1.2s infinite;
+}
+
+.cell-muted-stripes {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    rgba(15, 23, 42, 0.9) 0px,
+    rgba(15, 23, 42, 0.9) 5px,
+    rgba(30, 41, 59, 0.9) 5px,
+    rgba(30, 41, 59, 0.9) 10px
+  );
+}

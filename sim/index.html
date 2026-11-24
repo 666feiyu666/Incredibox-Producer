@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Incredibox 模拟舞台（开发用）</title>
+    <style>
+      :root {
+        --bg: #0b1120;
+        --panel: #131c31;
+        --line: #24314d;
+        --ink: #e6edf7;
+        --dim: #8698b8;
+        --accent: #22d3ee;
+        --rec: #f43f5e;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: radial-gradient(1200px 600px at 50% -10%, #1b2947 0%, var(--bg) 60%);
+        color: var(--ink);
+        font-family: ui-sans-serif, system-ui, 'Segoe UI', 'Microsoft YaHei', sans-serif;
+        user-select: none;
+      }
+      header {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        padding: 14px 22px;
+        border-bottom: 1px solid var(--line);
+        background: rgba(9, 14, 26, 0.7);
+        backdrop-filter: blur(8px);
+        position: sticky;
+        top: 0;
+        z-index: 10;
+      }
+      .brand { font-weight: 700; letter-spacing: 0.08em; font-size: 13px; color: var(--accent); }
+      .brand small { display: block; color: var(--dim); font-weight: 400; letter-spacing: 0; }
+      .clock { flex: 1; display: flex; align-items: center; gap: 12px; font-size: 12px; color: var(--dim); }
+      .bar {
+        position: relative;
+        flex: 1;
+        height: 8px;
+        border-radius: 999px;
+        background: #1c2540;
+        overflow: hidden;
+      }
+      .bar > i {
+        position: absolute;
+        inset: 0 auto 0 0;
+        width: 0%;
+        background: linear-gradient(90deg, #22d3ee, #a855f7);
+      }
+      .beats { display: flex; gap: 4px; }
+      .beats > b {
+        width: 10px; height: 10px; border-radius: 3px; background: #24314d;
+        transition: background 80ms linear;
+      }
+      .beats > b.on { background: var(--accent); }
+      .btn {
+        border: 1px solid var(--line);
+        background: #182241;
+        color: var(--ink);
+        padding: 8px 14px;
+        border-radius: 9px;
+        font-size: 12px;
+        cursor: pointer;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+      }
+      .btn:hover { border-color: #3b5280; }
+      .btn.rec { border-color: #52203a; background: #2a1224; color: #fda4af; }
+      .btn.rec.on { background: var(--rec); color: white; border-color: var(--rec); animation: pulse 1s infinite; }
+      @keyframes pulse { 50% { box-shadow: 0 0 0 6px rgba(244, 63, 94, 0.18); } }
+      main { display: grid; grid-template-columns: 1fr 320px; gap: 18px; padding: 18px 22px 40px; }
+      .stage-wrap, .side { border: 1px solid var(--line); border-radius: 16px; background: var(--panel); }
+      .stage-wrap { padding: 20px; }
+      .stage {
+        display: grid;
+        grid-template-columns: repeat(7, minmax(0, 1fr));
+        gap: 12px;
+        min-height: 190px;
+      }
+      .character {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 8px;
+        padding: 10px 6px 8px;
+        border-radius: 14px;
+        border: 1px dashed #2b3a5c;
+        background: linear-gradient(180deg, #16213a 0%, #111a2e 100%);
+        cursor: pointer;
+        transition: border-color 120ms, transform 120ms;
+      }
+      .character.has-icon { border-style: solid; border-color: #33507f; }
+      .character.muted { opacity: 0.45; }
+      .character.pending { border-color: var(--accent); box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.4); }
+      .character .face {
+        width: 46px; height: 46px; border-radius: 999px;
+        background: radial-gradient(circle at 35% 30%, #38507d, #1b2743);
+        border: 1px solid #3c5585;
+        display: grid; place-items: center;
+        font-size: 18px;
+      }
+      .character .badge {
+        font-size: 10px;
+        padding: 3px 8px;
+        border-radius: 999px;
+        background: #0d1526;
+        border: 1px solid var(--line);
+        color: var(--dim);
+        min-width: 54px;
+        text-align: center;
+        white-space: nowrap;
+      }
+      .character.has-icon .badge { color: #dbeafe; border-color: #3b5280; }
+      .character .slot-no { position: absolute; top: 6px; left: 8px; font-size: 10px; color: #4b5c7d; }
+      .character .mute-mark { position: absolute; top: 6px; right: 8px; font-size: 11px; color: #fb7185; }
+      .palette-head { margin: 22px 0 10px; font-size: 11px; letter-spacing: 0.12em; color: var(--dim); }
+      .palette { display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); gap: 8px; }
+      .icon {
+        position: relative;
+        display: flex; flex-direction: column; align-items: center; gap: 3px;
+        padding: 8px 2px 6px;
+        border-radius: 10px;
+        border: 1px solid var(--line);
+        background: #16203a;
+        color: var(--ink);
+        cursor: grab;
+        font-size: 10px;
+        line-height: 1.1;
+        text-align: center;
+        overflow: hidden;
+      }
+      .icon:active { cursor: grabbing; }
+      .icon > i {
+        width: 16px; height: 16px; border-radius: 5px; display: block;
+      }
+      .icon > span { color: var(--dim); }
+      .side { padding: 14px 16px; display: flex; flex-direction: column; min-height: 320px; }
+      .side h3 { margin: 0 0 10px; font-size: 11px; letter-spacing: 0.12em; color: var(--dim); font-weight: 600; }
+      .log { flex: 1; overflow: auto; font-family: ui-monospace, Consolas, monospace; font-size: 10.5px; line-height: 1.6; color: #9fb3d4; }
+      .log div { border-bottom: 1px dotted #1e2a44; padding: 1px 0; }
+      .log .t { color: #4b5c7d; margin-right: 6px; }
+      .log .ok { color: #4ade80; }
+      .log .warn { color: #fbbf24; }
+      .dialog-mask {
+        position: fixed; inset: 0; background: rgba(4, 8, 16, 0.72);
+        display: none; place-items: center; z-index: 50;
+      }
+      .dialog-mask.show { display: grid; }
+      .dialog {
+        background: #131c31; border: 1px solid #33507f; border-radius: 16px;
+        padding: 22px 26px; width: 380px; text-align: center;
+      }
+      .dialog h2 { margin: 0 0 6px; font-size: 15px; }
+      .dialog p { margin: 0 0 16px; font-size: 12px; color: var(--dim); }
+      .dialog .btn { width: 100%; }
+      .hint { margin-top: 10px; font-size: 11px; color: #4b5c7d; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="brand">INCREDIBOX · SIM<small>开发用模拟舞台（非官方）</small></div>
+      <div class="clock">
+        <span id="loop-info">loop —</span>
+        <div class="bar"><i id="progress"></i></div>
+        <div class="beats" id="beats"></div>
+      </div>
+      <button class="btn" id="unmute-all">全员解除静音</button>
+      <button class="btn" id="clear-all">清空舞台</button>
+      <button class="btn rec" id="rec" data-rec>REC</button>
+    </header>
+    <main>
+      <section class="stage-wrap">
+        <div class="stage" id="stage"></div>
+        <div class="palette-head">音色图标（拖到小人身上 / 点击选中后点小人）</div>
+        <div class="palette" id="palette"></div>
+        <div class="hint">提示：点击小人 = 静音 / 解除静音；右键小人 = 清空该槽位；换装按游戏规则「下一个小节第 1 拍」生效。</div>
+      </section>
+      <aside class="side">
+        <h3>事件日志</h3>
+        <div class="log" id="log"></div>
+      </aside>
+    </main>
+    <div class="dialog-mask" id="dialog-mask">
+      <div class="dialog">
+        <h2>Mix 录制完成</h2>
+        <p id="dialog-text">你的作品已生成</p>
+        <button class="btn" id="dialog-ok">保存并关闭</button>
+      </div>
+    </div>
+    <script src="./sim.js"></script>
+  </body>
+</html>

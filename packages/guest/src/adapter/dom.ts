@@ -1,0 +1,329 @@
+import type { AdapterKind, ProbeReport } from '@ic/shared';
+import { BaseAdapter } from './base.ts';
+import { cssPath, describe, isVisible, rectCenter } from '../util.ts';
+
+const SLOT_SELECTORS = [
+  // Incredibox Steam 1.2.9 真机：7 个角色容器带 data-polo-id="0..6"
+  '.polo[data-polo-id]',
+  '[data-polo-id].polo',
+  '[data-slot]',
+  '.character',
+  '.performer',
+  '.bonhomme',
+  '.robot',
+  '[class*="character"]',
+  '[class*="performer"]',
+  '[class*="bonhomme"]',
+];
+
+const ICON_SELECTORS = [
+  // Incredibox Steam 1.2.9 真机：20 个音色图标带 data-picto-num="0..19"（数值就是 iconId）
+  '[data-picto-num]',
+  '[data-icon]',
+  '.icon',
+  '.sound',
+  '.sound-icon',
+  '[class*="icon"]',
+  '[draggable="true"]',
+];
+
+const REC_SELECTORS = ['[data-rec]', '#rec', '[class*="icon-game-bt-record"]', '.rec', '[class*="record"]'];
+
+/** 真机每个角色自带的控制按钮（mute / solo / 移除） */
+const CTRL_SELECTORS = {
+  mute: '.icon-game-bt-mute, [class*="bt-mute"]',
+  solo: '.icon-game-bt-solo, [class*="bt-solo"]',
+  delete: '.icon-game-bt-delete, [class*="bt-delete"]',
+} as const;
+
+/**
+ * 真实游戏（Steam/Electron）里没有可供脚本调用的 API，只能走 DOM：
+ * Incredibox 的交互是「把底部音色图标拖到小人身上」，所以：
+ *   equip  = 从图标中心拖到小人中心的完整指针 / HTML5 DnD 序列
+ *   mute   = 点击小人（Incredibox 点小人即静音/解除）
+ *   clear  = 再点一次小人（脱离队伍）
+ *
+ * 选择器先按「data-* 约定」找，找不到再用「一排尺寸相近的兄弟元素」启发式推断，
+ * 也可以由 Host 端下发 domProfile 手动指定。
+ */
+export class DomAdapter extends BaseAdapter {
+  readonly kind: AdapterKind = 'dom';
+  private slotCache: HTMLElement[] = [];
+  private iconCache: HTMLElement[] = [];
+
+  /** data 属性里的编号就是游戏内的槽位/图标序号，优先按它排序 */
+  private orderByData(elements: HTMLElement[], attr: string): HTMLElement[] | null {
+    const pairs = elements.map((el) => ({ el, n: Number(el.dataset[attr]) }));
+    if (pairs.some((p) => !Number.isFinite(p.n))) return null;
+    if (new Set(pairs.map((p) => p.n)).size !== pairs.length) return null;
+    return pairs.sort((a, b) => a.n - b.n).map((p) => p.el);
+  }
+
+  private ensureSlots(): HTMLElement[] {
+    if (this.slotCache.length === 7 && this.slotCache.every((el) => el.isConnected)) return this.slotCache;
+    this.slotCache = this.discover(this.config.domProfile?.slotSelector, SLOT_SELECTORS, 7, 'poloId');
+    if (this.slotCache.length < 7) {
+      this.notes.push(`DOM 槽位只找到 ${this.slotCache.length}/7 个，请在校准面板指定 slotSelector`);
+    }
+    return this.slotCache;
+  }
+
+  private ensureIcons(): HTMLElement[] {
+    if (this.iconCache.length >= 20 && this.iconCache.every((el) => el.isConnected)) return this.iconCache;
+    this.iconCache = this.discover(this.config.domProfile?.iconSelector, ICON_SELECTORS, 20, 'pictoNum');
+    if (this.iconCache.length < 20) {
+      this.notes.push(`DOM 音色图标只找到 ${this.iconCache.length}/20 个，请在校准面板指定 iconSelector`);
+    }
+    return this.iconCache;
+  }
+
+  private discover(
+    profileSelector: string | undefined,
+    candidates: string[],
+    want: number,
+    dataAttr: string,
+  ): HTMLElement[] {
+    const pick = (selector: string): HTMLElement[] =>
+      Array.from(document.querySelectorAll(selector)).filter(
+        (el): el is HTMLElement => el instanceof HTMLElement && isVisible(el),
+      );
+    if (profileSelector) {
+      const found = pick(profileSelector);
+      if (found.length > 0) {
+        return (this.orderByData(found, dataAttr) ?? this.orderByLayout(found)).slice(0, want);
+      }
+    }
+    for (const selector of candidates) {
+      const found = pick(selector);
+      if (found.length >= want) {
+        return (this.orderByData(found, dataAttr) ?? this.orderByLayout(found)).slice(0, want);
+      }
+    }
+    return this.inferRow(want);
+  }
+
+  /** 先按「行」再按「列」排序，保证索引稳定对应游戏内的 7 / 20 序号 */
+  private orderByLayout(elements: HTMLElement[]): HTMLElement[] {
+    const withRect = elements.map((el) => ({ el, rect: el.getBoundingClientRect() }));
+    withRect.sort((a, b) => {
+      const dy = a.rect.top - b.rect.top;
+      if (Math.abs(dy) > Math.min(a.rect.height, b.rect.height) * 0.6) return dy;
+      return a.rect.left - b.rect.left;
+    });
+    return withRect.map((x) => x.el);
+  }
+
+  /** 启发式：在一排尺寸相近、等距排列的兄弟元素里找 slots / icons */
+  private inferRow(want: number): HTMLElement[] {
+    let best: { score: number; items: HTMLElement[] } | null = null;
+    const containers = Array.from(document.querySelectorAll('div,section,ul,main,nav'));
+    for (const container of containers.slice(0, 4000)) {
+      const children = Array.from(container.children).filter(
+        (el): el is HTMLElement => el instanceof HTMLElement && isVisible(el),
+      );
+      if (children.length < want || children.length > want * 3) continue;
+      const rects = children.map((el) => el.getBoundingClientRect());
+      const heights = rects.map((r) => r.height);
+      const avgH = heights.reduce((a, b) => a + b, 0) / heights.length;
+      if (avgH < 8) continue;
+      const similar = heights.every((h) => Math.abs(h - avgH) / avgH < 0.4);
+      if (!similar) continue;
+      const rowAligned = rects.every((r) => Math.abs(r.top - rects[0]!.top) < Math.max(8, avgH * 0.5));
+      const score = (rowAligned ? 2 : 0) + (children.length === want ? 1 : 0) + Math.min(1, avgH / 120);
+      if (!best || score > best.score) best = { score, items: children };
+    }
+    if (!best) return [];
+    return this.orderByLayout(best.items).slice(0, want);
+  }
+
+  private dispatchPointer(el: Element, type: string, point: { x: number; y: number }): void {
+    const common = { bubbles: true, cancelable: true, clientX: point.x, clientY: point.y, button: 0 };
+    if (type.startsWith('pointer')) {
+      const Ctor = typeof PointerEvent === 'function' ? PointerEvent : MouseEvent;
+      el.dispatchEvent(new Ctor(type, { ...common, pointerId: 1, isPrimary: true } as PointerEventInit));
+    } else {
+      el.dispatchEvent(new MouseEvent(type, common));
+    }
+  }
+
+  private dispatchDrag(el: Element, type: string, point: { x: number; y: number }, dataTransfer: DataTransfer): void {
+    const event = new DragEvent(type, {
+      bubbles: true,
+      cancelable: true,
+      clientX: point.x,
+      clientY: point.y,
+      dataTransfer,
+    });
+    el.dispatchEvent(event);
+  }
+
+  /** 把 iconId 拖到 slotIndex 身上 */
+  equipIcon(slotIndex: number, iconId: number): void {
+    const slots = this.ensureSlots();
+    const icons = this.ensureIcons();
+    const slot = slots[slotIndex];
+    const icon = icons[iconId];
+    if (!slot || !icon) {
+      this.markError(`slot=${slotIndex} icon=${iconId} 元素缺失`, 'equipIcon');
+      return;
+    }
+    // 真机的拖拽热区是 .picto 内部的 .hitzone，从那里起手才被游戏接受
+    const handle = (icon.querySelector('.hitzone') as HTMLElement | null) ?? icon;
+    const from = rectCenter(handle);
+    const to = rectCenter(slot);
+    const dataTransfer = typeof DataTransfer === 'function' ? new DataTransfer() : null;
+
+    try {
+      this.dispatchPointer(icon, 'pointerdown', from);
+      this.dispatchPointer(icon, 'mousedown', from);
+      if (dataTransfer) {
+        this.dispatchDrag(icon, 'dragstart', from, dataTransfer);
+        let hovered: Element | null = icon;
+        for (let step = 1; step <= 6; step += 1) {
+          const point = {
+            x: from.x + ((to.x - from.x) * step) / 6,
+            y: from.y + ((to.y - from.y) * step) / 6,
+          };
+          this.dispatchPointer(icon, 'pointermove', point);
+          this.dispatchPointer(document.elementFromPoint(point.x, point.y) ?? icon, 'mousemove', point);
+          const target = document.elementFromPoint(point.x, point.y) ?? slot;
+          if (target !== hovered) {
+            this.dispatchDrag(target, 'dragenter', point, dataTransfer);
+            hovered = target;
+          }
+          this.dispatchDrag(target, 'dragover', point, dataTransfer);
+        }
+        this.dispatchDrag(slot, 'drop', to, dataTransfer);
+        this.dispatchDrag(icon, 'dragend', to, dataTransfer);
+      }
+      this.dispatchPointer(slot, 'pointermove', to);
+      this.dispatchPointer(slot, 'pointerup', to);
+      this.dispatchPointer(slot, 'mouseup', to);
+      this.dispatchPointer(slot, 'click', to);
+
+      const stage = this.stageOf(slotIndex);
+      if (stage) {
+        stage.iconId = iconId;
+        stage.muted = false;
+      }
+    } catch (err) {
+      this.markError(err, 'equipIcon');
+    }
+  }
+
+  clearSlot(slotIndex: number): void {
+    const slot = this.ensureSlots()[slotIndex];
+    if (!slot) return;
+    try {
+      // 真机：角色上的 × 按钮才是「移除音色」；没有就退回点击角色
+      const button = slot.querySelector(CTRL_SELECTORS.delete) as HTMLElement | null;
+      this.clickElement(button ?? slot);
+      const stage = this.stageOf(slotIndex);
+      if (stage) {
+        stage.iconId = null;
+        stage.muted = false;
+      }
+    } catch (err) {
+      this.markError(err, 'clearSlot');
+    }
+  }
+
+  setMute(slotIndex: number, muted: boolean): void {
+    const slot = this.ensureSlots()[slotIndex];
+    if (!slot) return;
+    const stage = this.stageOf(slotIndex);
+    if (stage && stage.muted === muted) return;
+    // 真机：角色身上自带 mute 按钮，比「点击角色」精确
+    const button = slot.querySelector(CTRL_SELECTORS.mute) as HTMLElement | null;
+    try {
+      if (button) {
+        this.clickElement(button);
+      } else {
+        this.clickElement(slot);
+      }
+      if (stage) stage.muted = muted;
+    } catch (err) {
+      this.markError(err, 'setMute');
+    }
+  }
+
+  private clickElement(el: Element): void {
+    const point = rectCenter(el);
+    this.dispatchPointer(el, 'pointerdown', point);
+    this.dispatchPointer(el, 'pointerup', point);
+    this.dispatchPointer(el, 'click', point);
+  }
+
+  setSolo(slotIndex: number, solo: boolean): void {
+    const slot = this.ensureSlots()[slotIndex];
+    const stage = this.stageOf(slotIndex);
+    if (stage && stage.solo === solo) return;
+    const button = slot?.querySelector(CTRL_SELECTORS.solo) as HTMLElement | null;
+    if (button) {
+      try {
+        this.clickElement(button);
+        if (stage) stage.solo = solo;
+      } catch (err) {
+        this.markError(err, 'setSolo');
+      }
+      return;
+    }
+    // 没有原生 SOLO 控件时只能更新影子状态
+    if (stage) stage.solo = solo;
+  }
+
+  toggleRecord(recording: boolean): void {
+    const selector = this.config.domProfile?.recordSelector;
+    let button: HTMLElement | null = null;
+    if (selector) button = document.querySelector(selector);
+    if (!button) {
+      for (const candidate of REC_SELECTORS) {
+        const el = document.querySelector(candidate);
+        if (el instanceof HTMLElement && isVisible(el)) {
+          button = el;
+          break;
+        }
+      }
+    }
+    if (!button) {
+      const byText = Array.from(document.querySelectorAll('button,div,span,a')).find(
+        (el) => el instanceof HTMLElement && isVisible(el) && /^(rec|record|录制)$/i.test((el.textContent ?? '').trim()),
+      );
+      if (byText instanceof HTMLElement) button = byText;
+    }
+    if (!button) {
+      this.markError('未找到 REC 按钮', 'toggleRecord');
+      return;
+    }
+    const point = rectCenter(button);
+    try {
+      this.dispatchPointer(button, 'pointerdown', point);
+      this.dispatchPointer(button, 'pointerup', point);
+      this.dispatchPointer(button, 'click', point);
+    } catch (err) {
+      this.markError(err, 'toggleRecord');
+    }
+  }
+
+  protected override probeDetails(): {
+    slots: ProbeReport['slots'];
+    icons: ProbeReport['icons'];
+    recordButton: string | null;
+  } {
+    const slotEls = this.ensureSlots();
+    const iconEls = this.ensureIcons();
+    return {
+      slots: slotEls.map((el, index) => ({ index, selector: cssPath(el), label: describe(el) })),
+      icons: iconEls.map((el, index) => ({ index, selector: cssPath(el), label: describe(el) })),
+      recordButton: (() => {
+        const selector = this.config.domProfile?.recordSelector;
+        if (selector) return selector;
+        for (const candidate of REC_SELECTORS) {
+          const el = document.querySelector(candidate);
+          if (el) return candidate;
+        }
+        return null;
+      })(),
+    };
+  }
+}
