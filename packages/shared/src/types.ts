@@ -137,7 +137,11 @@ export interface RuntimeOptions {
   /**
    * 自动接住游戏的 bonus 提示：DOM 适配层换装后若发现 `.bt-bonus.bounce`
    * （游戏已识别出某个 bonus 组合、等待玩家点播放），立即用真实点击播它。
-   * 默认关闭 —— bonus 动画约 17s，期间全屏遮罩会吞掉所有指针事件。
+   *
+   * 默认开启：真机实测（V5 Brazil，全屏与窗口一致）组合在 bar7 前后凑齐后
+   * `.bt-bonus.found.bounce` 会弹跳并只停留约 23s，无人点击就自行消失 ——
+   * 不自动点等于"bonus 永远不播"。代价是动画约 17s，期间游戏会吞掉指针事件，
+   * 需要继续编排时可在 UI「校准 → 自动接 bonus」里临时关掉。
    */
   autoBonus: boolean;
 }
@@ -156,7 +160,7 @@ export const DEFAULT_RUNTIME_OPTIONS: RuntimeOptions = {
   adapterMode: 'auto',
   loopOverrideSec: null,
   domProfile: null,
-  autoBonus: false,
+  autoBonus: true,
 };
 
 /** 播放状态快照（Guest → Bridge → Host，约 10Hz） */

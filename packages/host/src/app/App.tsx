@@ -28,13 +28,24 @@ import { Badge, Button } from '../components/ui.tsx';
 import { useBridge } from './useBridge.ts';
 import { downloadProject, pickProjectFile, useProject } from './useProject.ts';
 
-const OPTIONS_KEY = 'ib-composer:options:v1';
+const OPTIONS_KEY = 'ib-composer:options:v2';
+const LEGACY_OPTIONS_KEY = 'ib-composer:options:v1';
 
 function loadOptions(): RuntimeOptions {
   try {
-    const raw = localStorage.getItem(OPTIONS_KEY);
-    if (!raw) return { ...DEFAULT_RUNTIME_OPTIONS };
-    return { ...DEFAULT_RUNTIME_OPTIONS, ...(JSON.parse(raw) as Partial<RuntimeOptions>) };
+    const current = localStorage.getItem(OPTIONS_KEY);
+    if (current) {
+      return { ...DEFAULT_RUNTIME_OPTIONS, ...(JSON.parse(current) as Partial<RuntimeOptions>) };
+    }
+    // 从 v1 迁移：v1 时代 autoBonus 的默认值是「关」，落盘的 false 并不代表用户的选择，
+    // 沿用下来会让「自动接 bonus」看起来永远不生效，因此丢掉该字段、改用新默认。
+    const legacy = localStorage.getItem(LEGACY_OPTIONS_KEY);
+    if (legacy) {
+      const parsed = JSON.parse(legacy) as Partial<RuntimeOptions>;
+      delete parsed.autoBonus;
+      return { ...DEFAULT_RUNTIME_OPTIONS, ...parsed };
+    }
+    return { ...DEFAULT_RUNTIME_OPTIONS };
   } catch {
     return { ...DEFAULT_RUNTIME_OPTIONS };
   }

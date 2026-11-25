@@ -29,6 +29,14 @@ const ICON_SELECTORS = [
 
 const REC_SELECTORS = ['[data-rec]', '#rec', '[class*="icon-game-bt-record"]', '.rec', '[class*="record"]'];
 
+/**
+ * 自动接 bonus 的观察窗口。必须盖住「最后一个音色就位 → 按钮开始弹跳」的延迟：
+ * 实测（V5 Brazil）这一步可能跨一整个循环（8s），旧值 2.5s 会刚好错过。
+ */
+const BONUS_WATCH_MS = 15000;
+/** 自动接 bonus 的轮询间隔 */
+const BONUS_POLL_MS = 250;
+
 /** 真机每个角色自带的控制按钮（mute / solo / 移除） */
 const CTRL_SELECTORS = {
   mute: '.icon-game-bt-mute, [class*="bt-mute"]',
@@ -262,15 +270,18 @@ export class DomAdapter extends BaseAdapter {
 
   /**
    * 游戏自己只负责「识别组合 + 让 bonus 按钮弹跳」，播放要玩家点一下。
-   * 真机实测：第 5 个音色拖上去后 `.bt-bonus.bounce` 出现，点击后约 9s 进入
-   * `playing`（`.video.show`），再过 ~8s 收尾。
+   * 真机实测（V5 Brazil 1.2.9）：bonus 组合在 bar7 前后凑齐时 class 走
+   * `unlock` → `inprogress` → `found bounce`（弹跳，只停留约 23s），
+   * 点击后约 9s 进入 `playing`（`.video.show`），再过 ~8s 收尾。
    *
-   * 这里在每次换装后开一个小观察窗（多次换装共用一个窗口并不断续期），
+   * 这里在每次换装后开一个观察窗（多次换装共用一个窗口并不断续期），
    * 一旦发现弹跳的按钮就发一次真实点击。关掉 autoBonus 时完全不介入。
    */
   private armBonusWatch(): void {
     if (!this.config.autoBonus) return;
-    this.bonusWatchUntil = Math.max(this.bonusWatchUntil, Date.now() + 2500);
+    // 窗口必须盖住「最后一个音色就位 → 按钮开始弹跳」的延迟：实测这一步可能跨
+    // 一整个循环（8s），2.5s 的旧窗口会刚好错过，表现就是「bonus 弹了但没人点」。
+    this.bonusWatchUntil = Math.max(this.bonusWatchUntil, Date.now() + BONUS_WATCH_MS);
     if (this.bonusTimer !== null) return;
     const poll = (): void => {
       this.bonusTimer = null;
@@ -279,16 +290,18 @@ export class DomAdapter extends BaseAdapter {
       if (button instanceof HTMLElement) {
         if (Date.now() - this.bonusClickedAt > 3000) {
           this.bonusClickedAt = Date.now();
+          // 点完就收工：游戏开始播动画后按钮不再弹跳，继续轮询只会重复点击。
+          this.bonusWatchUntil = 0;
           this.log('success', `游戏提示 bonus 可播，已自动点击 ${button.id || 'bonus'}`);
           this.clickElement(button);
         }
         return;
       }
       if (Date.now() < this.bonusWatchUntil) {
-        this.bonusTimer = window.setTimeout(poll, 250);
+        this.bonusTimer = window.setTimeout(poll, BONUS_POLL_MS);
       }
     };
-    this.bonusTimer = window.setTimeout(poll, 250);
+    this.bonusTimer = window.setTimeout(poll, BONUS_POLL_MS);
   }
 
   override dispose(): void {
