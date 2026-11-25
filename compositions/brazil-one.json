@@ -220,14 +220,6 @@
       "iconId": 16
     },
     {
-      "id": "b11-1-s3-equip",
-      "bar": 11,
-      "beat": 1,
-      "slotIndex": 3,
-      "action": "EQUIP",
-      "iconId": 10
-    },
-    {
       "id": "b11-1-s6-mute",
       "bar": 11,
       "beat": 1,
@@ -256,52 +248,18 @@
       "action": "MUTE"
     },
     {
-      "id": "b14-1-s3-mute",
-      "bar": 14,
+      "id": "b13-1-s3-equip",
+      "bar": 13,
       "beat": 1,
       "slotIndex": 3,
-      "action": "MUTE"
+      "action": "EQUIP",
+      "iconId": 10
     },
     {
-      "id": "b14-1-s0-mute",
+      "id": "b14-5-s3-mute",
       "bar": 14,
-      "beat": 1,
-      "slotIndex": 0,
-      "action": "MUTE"
-    },
-    {
-      "id": "b14-1-s1-mute",
-      "bar": 14,
-      "beat": 1,
-      "slotIndex": 1,
-      "action": "MUTE"
-    },
-    {
-      "id": "b14-1-s2-mute",
-      "bar": 14,
-      "beat": 1,
-      "slotIndex": 2,
-      "action": "MUTE"
-    },
-    {
-      "id": "b14-1-s4-mute",
-      "bar": 14,
-      "beat": 1,
-      "slotIndex": 4,
-      "action": "MUTE"
-    },
-    {
-      "id": "b14-1-s5-mute",
-      "bar": 14,
-      "beat": 1,
-      "slotIndex": 5,
-      "action": "MUTE"
-    },
-    {
-      "id": "b14-1-s6-mute",
-      "bar": 14,
-      "beat": 1,
-      "slotIndex": 6,
+      "beat": 5,
+      "slotIndex": 3,
       "action": "MUTE"
     }
   ]
