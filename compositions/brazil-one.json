@@ -256,9 +256,9 @@
       "iconId": 10
     },
     {
-      "id": "b14-5-s3-mute",
+      "id": "b14-8-s3-mute",
       "bar": 14,
-      "beat": 5,
+      "beat": 8,
       "slotIndex": 3,
       "action": "MUTE"
     }
