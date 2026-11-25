@@ -16,6 +16,8 @@ import { describe } from '../util.ts';
 export interface AdapterConfig {
   loopOverrideSec: number | null;
   domProfile: { slotSelector?: string; iconSelector?: string; recordSelector?: string } | null;
+  /** 自动播放游戏提示的 bonus（见 RuntimeOptions.autoBonus） */
+  autoBonus: boolean;
 }
 
 /**
@@ -31,9 +33,19 @@ export abstract class BaseAdapter implements GameAdapter, GameAdapterExtras {
   protected config: AdapterConfig;
   /** 由 Agent 注入：把手势交给 Bridge 用真实 CDP 输入执行 */
   private inputSink: ((ops: InputOp[]) => void) | null = null;
+  /** 由 Agent 注入：让适配层的事件（如自动接 bonus）出现在 Host 日志里 */
+  private logSink: ((level: 'info' | 'warn' | 'error' | 'success', message: string) => void) | null = null;
 
   setInputSink(sink: ((ops: InputOp[]) => void) | null): void {
     this.inputSink = sink;
+  }
+
+  setLogSink(sink: ((level: 'info' | 'warn' | 'error' | 'success', message: string) => void) | null): void {
+    this.logSink = sink;
+  }
+
+  protected log(level: 'info' | 'warn' | 'error' | 'success', message: string): void {
+    this.logSink?.(level, message);
   }
 
   /** 有 Bridge 通道就走真实输入；没有（纯控制台注入）退回合成事件 */
@@ -105,6 +117,10 @@ export abstract class BaseAdapter implements GameAdapter, GameAdapterExtras {
   setAdapterConfig(config: Partial<AdapterConfig>): void {
     this.config = { ...this.config, ...config };
     if (config.loopOverrideSec !== undefined) this.clock.setOverride(config.loopOverrideSec);
+  }
+
+  setAutoBonus(enabled: boolean): void {
+    this.config.autoBonus = enabled;
   }
 
   getTrackedStage(): StageSnapshot {

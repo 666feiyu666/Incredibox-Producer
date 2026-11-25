@@ -45,7 +45,9 @@ export class Agent {
     this.adapter = createAdapter(this.options.adapterMode, {
       loopOverrideSec: this.options.loopOverrideSec,
       domProfile: this.options.domProfile,
+      autoBonus: this.options.autoBonus,
     });
+    this.adapter.setLogSink((level, message) => this.log(level, message));
     this.link = new Link((msg) => this.handle(msg), config.wsUrl);
     // 手势执行下沉到 Bridge：真机只认真实 CDP 输入，Guest 只负责算坐标和时机
     this.adapter.setInputSink((ops) => this.send({ type: 'input:exec', ops }));
@@ -147,6 +149,7 @@ export class Agent {
     const resolved = createAdapter('auto', {
       loopOverrideSec: this.options.loopOverrideSec,
       domProfile: this.options.domProfile,
+      autoBonus: this.options.autoBonus,
     });
     if (resolved.kind === this.adapter.kind) return;
     this.log('info', `检测到游戏高层 API，适配层从 dom 升级为 ${resolved.kind}`);
@@ -253,6 +256,9 @@ export class Agent {
     if (patch.domProfile !== undefined) {
       this.adapter.setAdapterConfig({ domProfile: this.options.domProfile });
     }
+    if (patch.autoBonus !== undefined) {
+      this.adapter.setAutoBonus(this.options.autoBonus);
+    }
     if (patch.adapterMode !== undefined && patch.adapterMode !== previousMode) {
       this.log('info', `适配层切换：${previousMode} → ${this.options.adapterMode}`);
       this.rebuildAdapter();
@@ -260,7 +266,7 @@ export class Agent {
     }
     this.log(
       'info',
-      `运行时参数已更新（offset=${this.options.offsetMs}ms, lead=${this.options.equipLeadBeats}拍, tick=${this.options.tickMs}ms）`,
+      `运行时参数已更新（offset=${this.options.offsetMs}ms, lead=${this.options.equipLeadBeats}拍, tick=${this.options.tickMs}ms, autoBonus=${this.options.autoBonus ? 'on' : 'off'}）`,
     );
     this.send({ type: 'tick', state: this.transport.getState() });
   }
@@ -274,8 +280,10 @@ export class Agent {
     this.adapter = createAdapter(this.options.adapterMode, {
       loopOverrideSec: this.options.loopOverrideSec,
       domProfile: this.options.domProfile,
+      autoBonus: this.options.autoBonus,
     });
     this.adapter.setInputSink((ops) => this.send({ type: 'input:exec', ops }));
+    this.adapter.setLogSink((level, message) => this.log(level, message));
     this.transport = new Transport(this.adapter, () => this.options, this.buildCallbacks());
     this.mixer = this.buildMixer();
     if (wasPlaying && this.project) this.transport.start(this.project, bar, 'play');

@@ -134,6 +134,12 @@ export interface RuntimeOptions {
   loopOverrideSec: number | null;
   /** 自定义 DOM 选择器画像（真实游戏适配时用） */
   domProfile: DomProfile | null;
+  /**
+   * 自动接住游戏的 bonus 提示：DOM 适配层换装后若发现 `.bt-bonus.bounce`
+   * （游戏已识别出某个 bonus 组合、等待玩家点播放），立即用真实点击播它。
+   * 默认关闭 —— bonus 动画约 17s，期间全屏遮罩会吞掉所有指针事件。
+   */
+  autoBonus: boolean;
 }
 
 export interface DomProfile {
@@ -150,6 +156,7 @@ export const DEFAULT_RUNTIME_OPTIONS: RuntimeOptions = {
   adapterMode: 'auto',
   loopOverrideSec: null,
   domProfile: null,
+  autoBonus: false,
 };
 
 /** 播放状态快照（Guest → Bridge → Host，约 10Hz） */

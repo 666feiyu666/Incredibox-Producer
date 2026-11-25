@@ -50,6 +50,10 @@ export class DomAdapter extends BaseAdapter {
   readonly kind: AdapterKind = 'dom';
   private slotCache: HTMLElement[] = [];
   private iconCache: HTMLElement[] = [];
+  /** 自动接 bonus：观察窗口截止时间 + 轮询定时器 */
+  private bonusWatchUntil = 0;
+  private bonusTimer: number | null = null;
+  private bonusClickedAt = 0;
 
   /** data 属性里的编号就是游戏内的槽位/图标序号，优先按它排序 */
   private orderByData(elements: HTMLElement[], attr: string): HTMLElement[] | null {
@@ -213,6 +217,7 @@ export class DomAdapter extends BaseAdapter {
         stage.iconId = iconId;
         stage.muted = false;
       }
+      this.armBonusWatch();
       return;
     }
 
@@ -249,9 +254,48 @@ export class DomAdapter extends BaseAdapter {
         stage.iconId = iconId;
         stage.muted = false;
       }
+      this.armBonusWatch();
     } catch (err) {
       this.markError(err, 'equipIcon');
     }
+  }
+
+  /**
+   * 游戏自己只负责「识别组合 + 让 bonus 按钮弹跳」，播放要玩家点一下。
+   * 真机实测：第 5 个音色拖上去后 `.bt-bonus.bounce` 出现，点击后约 9s 进入
+   * `playing`（`.video.show`），再过 ~8s 收尾。
+   *
+   * 这里在每次换装后开一个小观察窗（多次换装共用一个窗口并不断续期），
+   * 一旦发现弹跳的按钮就发一次真实点击。关掉 autoBonus 时完全不介入。
+   */
+  private armBonusWatch(): void {
+    if (!this.config.autoBonus) return;
+    this.bonusWatchUntil = Math.max(this.bonusWatchUntil, Date.now() + 2500);
+    if (this.bonusTimer !== null) return;
+    const poll = (): void => {
+      this.bonusTimer = null;
+      if (!this.config.autoBonus) return;
+      const button = document.querySelector('.bt-bonus.bounce');
+      if (button instanceof HTMLElement) {
+        if (Date.now() - this.bonusClickedAt > 3000) {
+          this.bonusClickedAt = Date.now();
+          this.log('success', `游戏提示 bonus 可播，已自动点击 ${button.id || 'bonus'}`);
+          this.clickElement(button);
+        }
+        return;
+      }
+      if (Date.now() < this.bonusWatchUntil) {
+        this.bonusTimer = window.setTimeout(poll, 250);
+      }
+    };
+    this.bonusTimer = window.setTimeout(poll, 250);
+  }
+
+  override dispose(): void {
+    if (this.bonusTimer !== null) window.clearTimeout(this.bonusTimer);
+    this.bonusTimer = null;
+    this.bonusWatchUntil = 0;
+    super.dispose();
   }
 
   clearSlot(slotIndex: number): void {

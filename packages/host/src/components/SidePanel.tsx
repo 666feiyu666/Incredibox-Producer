@@ -246,6 +246,17 @@ export function Settings({
             <option value="dom">dom（纯 DOM 拖拽）</option>
           </Select>
         </Field>
+        <Field label="自动接 bonus" hint="按钮跳起时自动点">
+          <label className="flex items-center gap-1.5 text-[11px] text-slate-300">
+            <input
+              type="checkbox"
+              checked={options.autoBonus}
+              onChange={(e) => onOptions({ autoBonus: e.target.checked })}
+              className="accent-cyan-400"
+            />
+            {options.autoBonus ? '开（动画期间会吞输入）' : '关'}
+          </label>
+        </Field>
         <Field label="循环时长覆盖" hint="秒，0=自动">
           <NumberInput
             value={options.loopOverrideSec ?? 0}

@@ -1,0 +1,308 @@
+{
+  "title": "Brazil · Intro→Build-up→Drop1→Breakdown→Drop2(Bonus Chegou)→Outro(渐收+吉他独奏)→静音（104s）",
+  "versionId": "V5_Brazil",
+  "bpm": 60,
+  "beatsPerBar": 8,
+  "totalBars": 13,
+  "events": [
+    {
+      "id": "b1-1-s3-equip",
+      "bar": 1,
+      "beat": 1,
+      "slotIndex": 3,
+      "action": "EQUIP",
+      "iconId": 10
+    },
+    {
+      "id": "b1-1-s1-equip",
+      "bar": 1,
+      "beat": 1,
+      "slotIndex": 1,
+      "action": "EQUIP",
+      "iconId": 2
+    },
+    {
+      "id": "b2-1-s0-equip",
+      "bar": 2,
+      "beat": 1,
+      "slotIndex": 0,
+      "action": "EQUIP",
+      "iconId": 0
+    },
+    {
+      "id": "b2-1-s4-equip",
+      "bar": 2,
+      "beat": 1,
+      "slotIndex": 4,
+      "action": "EQUIP",
+      "iconId": 15
+    },
+    {
+      "id": "b3-1-s2-equip",
+      "bar": 3,
+      "beat": 1,
+      "slotIndex": 2,
+      "action": "EQUIP",
+      "iconId": 5
+    },
+    {
+      "id": "b3-7-s0-mute",
+      "bar": 3,
+      "beat": 7,
+      "slotIndex": 0,
+      "action": "MUTE"
+    },
+    {
+      "id": "b3-7-s2-mute",
+      "bar": 3,
+      "beat": 7,
+      "slotIndex": 2,
+      "action": "MUTE"
+    },
+    {
+      "id": "b4-1-s0-unmute",
+      "bar": 4,
+      "beat": 1,
+      "slotIndex": 0,
+      "action": "UNMUTE"
+    },
+    {
+      "id": "b4-1-s2-unmute",
+      "bar": 4,
+      "beat": 1,
+      "slotIndex": 2,
+      "action": "UNMUTE"
+    },
+    {
+      "id": "b4-1-s4-equip",
+      "bar": 4,
+      "beat": 1,
+      "slotIndex": 4,
+      "action": "EQUIP",
+      "iconId": 17
+    },
+    {
+      "id": "b5-1-s5-equip",
+      "bar": 5,
+      "beat": 1,
+      "slotIndex": 5,
+      "action": "EQUIP",
+      "iconId": 7
+    },
+    {
+      "id": "b5-1-s1-mute",
+      "bar": 5,
+      "beat": 1,
+      "slotIndex": 1,
+      "action": "MUTE"
+    },
+    {
+      "id": "b5-5-s1-unmute",
+      "bar": 5,
+      "beat": 5,
+      "slotIndex": 1,
+      "action": "UNMUTE"
+    },
+    {
+      "id": "b5-5-s5-mute",
+      "bar": 5,
+      "beat": 5,
+      "slotIndex": 5,
+      "action": "MUTE"
+    },
+    {
+      "id": "b6-1-s0-mute",
+      "bar": 6,
+      "beat": 1,
+      "slotIndex": 0,
+      "action": "MUTE"
+    },
+    {
+      "id": "b6-1-s1-mute",
+      "bar": 6,
+      "beat": 1,
+      "slotIndex": 1,
+      "action": "MUTE"
+    },
+    {
+      "id": "b6-1-s2-mute",
+      "bar": 6,
+      "beat": 1,
+      "slotIndex": 2,
+      "action": "MUTE"
+    },
+    {
+      "id": "b6-3-s1-equip",
+      "bar": 6,
+      "beat": 3,
+      "slotIndex": 1,
+      "action": "EQUIP",
+      "iconId": 3
+    },
+    {
+      "id": "b6-3-s2-equip",
+      "bar": 6,
+      "beat": 3,
+      "slotIndex": 2,
+      "action": "EQUIP",
+      "iconId": 8
+    },
+    {
+      "id": "b7-1-s0-unmute",
+      "bar": 7,
+      "beat": 1,
+      "slotIndex": 0,
+      "action": "UNMUTE"
+    },
+    {
+      "id": "b7-1-s2-unmute",
+      "bar": 7,
+      "beat": 1,
+      "slotIndex": 2,
+      "action": "UNMUTE"
+    },
+    {
+      "id": "b7-1-s1-unmute",
+      "bar": 7,
+      "beat": 1,
+      "slotIndex": 1,
+      "action": "UNMUTE"
+    },
+    {
+      "id": "b7-1-s3-equip",
+      "bar": 7,
+      "beat": 1,
+      "slotIndex": 3,
+      "action": "EQUIP",
+      "iconId": 12
+    },
+    {
+      "id": "b7-7-s0-mute",
+      "bar": 7,
+      "beat": 7,
+      "slotIndex": 0,
+      "action": "MUTE"
+    },
+    {
+      "id": "b7-7-s2-mute",
+      "bar": 7,
+      "beat": 7,
+      "slotIndex": 2,
+      "action": "MUTE"
+    },
+    {
+      "id": "b8-1-s0-unmute",
+      "bar": 8,
+      "beat": 1,
+      "slotIndex": 0,
+      "action": "UNMUTE"
+    },
+    {
+      "id": "b8-1-s2-unmute",
+      "bar": 8,
+      "beat": 1,
+      "slotIndex": 2,
+      "action": "UNMUTE"
+    },
+    {
+      "id": "b8-1-s4-mute",
+      "bar": 8,
+      "beat": 1,
+      "slotIndex": 4,
+      "action": "MUTE"
+    },
+    {
+      "id": "b8-1-s6-equip",
+      "bar": 8,
+      "beat": 1,
+      "slotIndex": 6,
+      "action": "EQUIP",
+      "iconId": 16
+    },
+    {
+      "id": "b11-1-s3-equip",
+      "bar": 11,
+      "beat": 1,
+      "slotIndex": 3,
+      "action": "EQUIP",
+      "iconId": 10
+    },
+    {
+      "id": "b11-1-s6-mute",
+      "bar": 11,
+      "beat": 1,
+      "slotIndex": 6,
+      "action": "MUTE"
+    },
+    {
+      "id": "b11-5-s2-mute",
+      "bar": 11,
+      "beat": 5,
+      "slotIndex": 2,
+      "action": "MUTE"
+    },
+    {
+      "id": "b12-1-s0-mute",
+      "bar": 12,
+      "beat": 1,
+      "slotIndex": 0,
+      "action": "MUTE"
+    },
+    {
+      "id": "b12-5-s1-mute",
+      "bar": 12,
+      "beat": 5,
+      "slotIndex": 1,
+      "action": "MUTE"
+    },
+    {
+      "id": "b13-5-s3-mute",
+      "bar": 13,
+      "beat": 5,
+      "slotIndex": 3,
+      "action": "MUTE"
+    },
+    {
+      "id": "b13-5-s0-mute",
+      "bar": 13,
+      "beat": 5,
+      "slotIndex": 0,
+      "action": "MUTE"
+    },
+    {
+      "id": "b13-5-s1-mute",
+      "bar": 13,
+      "beat": 5,
+      "slotIndex": 1,
+      "action": "MUTE"
+    },
+    {
+      "id": "b13-5-s2-mute",
+      "bar": 13,
+      "beat": 5,
+      "slotIndex": 2,
+      "action": "MUTE"
+    },
+    {
+      "id": "b13-5-s4-mute",
+      "bar": 13,
+      "beat": 5,
+      "slotIndex": 4,
+      "action": "MUTE"
+    },
+    {
+      "id": "b13-5-s5-mute",
+      "bar": 13,
+      "beat": 5,
+      "slotIndex": 5,
+      "action": "MUTE"
+    },
+    {
+      "id": "b13-5-s6-mute",
+      "bar": 13,
+      "beat": 5,
+      "slotIndex": 6,
+      "action": "MUTE"
+    }
+  ]
+}
