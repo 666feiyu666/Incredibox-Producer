@@ -1,9 +1,9 @@
 {
-  "title": "Brazil · Intro→Build-up→Drop1→Breakdown→Drop2(Bonus Chegou)→Outro(渐收+吉他独奏)→静音（104s）",
+  "title": "Brazil · Intro→Build-up→Drop1→Breakdown→Drop2(Bonus Chegou)→Outro(渐收+吉他独奏)→循环末收音（112s）",
   "versionId": "V5_Brazil",
   "bpm": 60,
   "beatsPerBar": 8,
-  "totalBars": 13,
+  "totalBars": 14,
   "events": [
     {
       "id": "b1-1-s3-equip",
@@ -256,51 +256,51 @@
       "action": "MUTE"
     },
     {
-      "id": "b13-5-s3-mute",
-      "bar": 13,
-      "beat": 5,
+      "id": "b14-1-s3-mute",
+      "bar": 14,
+      "beat": 1,
       "slotIndex": 3,
       "action": "MUTE"
     },
     {
-      "id": "b13-5-s0-mute",
-      "bar": 13,
-      "beat": 5,
+      "id": "b14-1-s0-mute",
+      "bar": 14,
+      "beat": 1,
       "slotIndex": 0,
       "action": "MUTE"
     },
     {
-      "id": "b13-5-s1-mute",
-      "bar": 13,
-      "beat": 5,
+      "id": "b14-1-s1-mute",
+      "bar": 14,
+      "beat": 1,
       "slotIndex": 1,
       "action": "MUTE"
     },
     {
-      "id": "b13-5-s2-mute",
-      "bar": 13,
-      "beat": 5,
+      "id": "b14-1-s2-mute",
+      "bar": 14,
+      "beat": 1,
       "slotIndex": 2,
       "action": "MUTE"
     },
     {
-      "id": "b13-5-s4-mute",
-      "bar": 13,
-      "beat": 5,
+      "id": "b14-1-s4-mute",
+      "bar": 14,
+      "beat": 1,
       "slotIndex": 4,
       "action": "MUTE"
     },
     {
-      "id": "b13-5-s5-mute",
-      "bar": 13,
-      "beat": 5,
+      "id": "b14-1-s5-mute",
+      "bar": 14,
+      "beat": 1,
       "slotIndex": 5,
       "action": "MUTE"
     },
     {
-      "id": "b13-5-s6-mute",
-      "bar": 13,
-      "beat": 5,
+      "id": "b14-1-s6-mute",
+      "bar": 14,
+      "beat": 1,
       "slotIndex": 6,
       "action": "MUTE"
     }
